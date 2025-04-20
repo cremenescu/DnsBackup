@@ -1,32 +1,53 @@
-# generate_zones_csv.ps1
-# Scanează fișierele .dns + registry pentru a genera zones.csv compatibil cu scriptul de restaurare DNS
+# generate_zones_from_backup.ps1
+# Generează zones.csv pe baza fișierelor .dns și dns_zones.reg dintr-un backup DNS
 
-$dnsPath = "C:\Windows\System32\dns"
-$zonesKey = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\DNS Server\Zones"
-$outputCsv = "C:\DNS-zones-generated.csv"
+param (
+    [Parameter(Mandatory = $true)]
+    [string]$BackupPath
+)
 
-if (-not (Test-Path $dnsPath)) {
-    Write-Host "Folderul $dnsPath nu există!" -ForegroundColor Red
-    exit
+$dnsFolder = Join-Path $BackupPath "zones"
+$regFile   = Join-Path $BackupPath "dns_zones.reg"
+$outputCsv = Join-Path $BackupPath "zones.csv"
+
+if (-not (Test-Path $dnsFolder)) {
+    Write-Host "[ERROR] Folderul cu fișiere .dns nu există: $dnsFolder" -ForegroundColor Red
+    exit 1
 }
 
-$dnsFiles = Get-ChildItem -Path $dnsPath -Filter "*.dns" | Where-Object { $_.BaseName -notin @("cache", "TrustAnchors") }
-$zoneList = @()
+if (-not (Test-Path $regFile)) {
+    Write-Host "[ERROR] Fișierul dns_zones.reg nu a fost găsit: $regFile" -ForegroundColor Red
+    exit 1
+}
 
+$dnsFiles = Get-ChildItem -Path $dnsFolder -Filter "*.dns" | Where-Object { $_.BaseName -notin @("cache", "TrustAnchors") }
+$regLines = Get-Content $regFile -Encoding Unicode
+
+$zoneList = @()
 foreach ($file in $dnsFiles) {
     $zoneName = $file.BaseName
     $fileName = $file.Name
     $zoneType = "Primary"
-    $masters = ""
+    $masters  = ""
 
-    $zoneReg = Join-Path $zonesKey $zoneName
-    if (Test-Path $zoneReg) {
-        $props = Get-ItemProperty -Path $zoneReg -ErrorAction SilentlyContinue
-        if ($props.ZoneType -eq 1) {
-            $zoneType = "Secondary"
-            $masters = ($props.MasterServers -join ",")
-        } elseif ($props.ZoneType -eq 2) {
-            $zoneType = "Stub"
+    # Caută blocul din .reg pentru zona curentă
+    $startIndex = ($regLines | Select-String -Pattern "\\Zones\\$zoneName\]" -SimpleMatch).LineNumber
+    if ($startIndex) {
+        $endIndex = ($regLines[$startIndex..($regLines.Count - 1)] | Select-String -Pattern "^\[" -SimpleMatch -NotMatch | Select-Object -First 1).LineNumber
+        $zoneBlock = if ($endIndex) { $regLines[$startIndex..($startIndex + $endIndex - 2)] } else { $regLines[$startIndex..($regLines.Count - 1)] }
+
+        foreach ($line in $zoneBlock) {
+            if ($line -match '"ZoneType"=dword:(\d+)') {
+                switch ($matches[1]) {
+                    "1" { $zoneType = "Secondary" }
+                    "2" { $zoneType = "Stub" } # not used here
+                    default { $zoneType = "Primary" }
+                }
+            }
+            if ($line -match '"MasterServers"=hex\(7\):(.+?)\\0') {
+                $hex = $matches[1] -replace ",00", ""
+                $masters = ($hex -split ",") -join ""
+            }
         }
     }
 
@@ -39,4 +60,4 @@ foreach ($file in $dnsFiles) {
 }
 
 $zoneList | Export-Csv -Path $outputCsv -NoTypeInformation -Encoding UTF8
-Write-Host "zones.csv generat: $outputCsv" -ForegroundColor Green
+Write-Host "[✓] zones.csv generat: $outputCsv" -ForegroundColor Green
