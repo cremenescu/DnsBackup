@@ -1,0 +1,14 @@
+# Fișiere generate automat
+*.zip
+*.csv
+*.reg
+*.log
+
+# Foldere temporare
+backups/
+logs/
+
+# Sisteme locale
+.vscode/
+Thumbs.db
+desktop.ini
