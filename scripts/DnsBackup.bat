@@ -22,7 +22,6 @@ REM Copiază doar fișierele .dns (fără subfoldere)
 xcopy "%SystemRoot%\System32\dns\*.dns" "%BACKUP_DIR%\zones\" /C /H /R /Y
 
 REM Exportă registry DNS
-reg export "HKLM\SYSTEM\CurrentControlSet\Services\DNS" "%BACKUP_DIR%\dns_config.reg" /y
 reg export "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\DNS Server\Zones" "%BACKUP_DIR%\dns_zones.reg" /y
 
 echo Backup completed to %BACKUP_DIR%
@@ -37,7 +36,6 @@ if "%IMPORT_DIR%"=="" (
 )
 
 REM Importă registry DNS
-reg import "%IMPORT_DIR%\dns_config.reg"
 reg import "%IMPORT_DIR%\dns_zones.reg"
 
 REM Copiază doar fișierele .dns (fără subfoldere)
