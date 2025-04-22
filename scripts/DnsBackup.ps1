@@ -50,14 +50,14 @@ if ($Export) {
     Write-Host " -> Created 'zones' folder: $zoneFolder"
 
     # Step 2) Export DNS service config
-    Write-Host "`n[Step 2/11] Exporting DNS service registry..." -ForegroundColor Cyan
-    $regFile = Join-Path $Path "dns_config.reg"
-    reg export "HKLM\SYSTEM\CurrentControlSet\Services\DNS" $regFile /y > $null
-    if (Test-Path $regFile) {
-        Write-Host "    • Saved service config to: $regFile"
-    } else {
-        Write-Host "    X Failed to export DNS service config" -ForegroundColor Red
-    }
+#    Write-Host "`n[Step 2/11] Exporting DNS service registry..." -ForegroundColor Cyan
+#    $regFile = Join-Path $Path "dns_config.reg"
+#    reg export "HKLM\SYSTEM\CurrentControlSet\Services\DNS" $regFile /y > $null
+#    if (Test-Path $regFile) {
+#        Write-Host "    • Saved service config to: $regFile"
+#    } else {
+#        Write-Host "    X Failed to export DNS service config" -ForegroundColor Red
+#    }
 
     # Step 3) Export active zones registry definitions to single file
     Write-Host "`n[Step 3/11] Exporting active zones definitions..." -ForegroundColor Cyan
@@ -190,9 +190,9 @@ if ($Import) {
     # Step 2) Import service registry
     if ($IncludeRegistry) {
         Write-Host "`n[Step 2/6] Importing DNS service registry..." -ForegroundColor Cyan
-        $regFile = Join-Path $Path 'dns_config.reg'
-        if (Test-Path $regFile) { reg import $regFile > $null; Write-Host "    [OK] Service registry imported" }
-        else                  { Write-Host "    [SKIP] dns_config.reg missing" -ForegroundColor DarkGray }
+#        $regFile = Join-Path $Path 'dns_config.reg'
+#        if (Test-Path $regFile) { reg import $regFile > $null; Write-Host "    [OK] Service registry imported" }
+#        else                  { Write-Host "    [SKIP] dns_config.reg missing" -ForegroundColor DarkGray }
 
         # Import zones registry definitions
         Write-Host "`n[Step 3/6] Importing zones registry definitions..." -ForegroundColor Cyan
